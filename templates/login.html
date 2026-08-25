@@ -1,1 +1,49 @@
-.
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Хогвартс</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="hogwarts-logo">🏰</div>
+            <h1>Хогвартс</h1>
+            <h2>Вход для учителей</h2>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash-error">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="username">Имя пользователя</label>
+                    <input type="text" id="username" name="username" required placeholder="Введите логин">
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" required placeholder="Введите пароль">
+                </div>
+                <button type="submit" class="btn btn-primary">Войти</button>
+            </form>
+
+            <div class="login-hint">
+                <p>Тестовые учителя:</p>
+                <p><strong>snape</strong> / snape123</p>
+                <p><strong>mcgonagall</strong> / mcgonagall123</p>
+                <p><strong>lana</strong> / lana123</p>
+            </div>
+
+            <a href="{{ url_for('index') }}" class="btn-back">⬅️ Вернуться на главную</a>
+        </div>
+    </div>
+</body>
+</html>
