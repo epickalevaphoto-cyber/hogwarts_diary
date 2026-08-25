@@ -5,6 +5,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import os
 
+python init_db.py
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hogwarts_secret_key_2026'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hogwarts.db'
