@@ -1,42 +1,10 @@
-import sys
-print(f"🐍 Python version: {sys.version}")
-print(f"📍 Running on: {sys.platform}")
-
-# Проверяем совместимость
-if sys.version_info >= (3, 14):
-    print("⚠️ WARNING: Python 3.14+ may have compatibility issues with Pillow")
-    
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
-import io
 import sys
 
-# Проверка версии Python
-print(f"Python version: {sys.version}")
-
-try:
-    from PIL import Image, ImageDraw, ImageFont
-    print("PIL loaded successfully")
-except ImportError as e:
-    print(f"Error importing PIL: {e}")
-    # Создаем заглушку, если PIL не установлен
-    class Image:
-        @staticmethod
-        def open(*args, **kwargs):
-            return None
-    class ImageDraw:
-        @staticmethod
-        def Draw(*args, **kwargs):
-            return None
-    class ImageFont:
-        @staticmethod
-        def truetype(*args, **kwargs):
-            return None
-        @staticmethod
-        def load_default():
-            return None
+print(f"🐍 Python version: {sys.version}")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hogwarts_secret_key_2026'
@@ -86,7 +54,6 @@ class Grade(db.Model):
     value = db.Column(db.String(20))
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Проверка входа
 def check_auth():
     return session.get('teacher_id') is not None
 
@@ -162,40 +129,7 @@ def update_grade():
 
 @app.route('/certificate/<int:student_id>')
 def certificate(student_id):
-    """Генерирует аттестат для студента с учетом его факультета"""
-    student = Student.query.get_or_404(student_id)
-    course = Course.query.get(student.course_id)
-    
-    if course.year != 7:
-        flash('Аттестат выдается только на 7-м курсе!', 'error')
-        return redirect(url_for('course_view', course_id=course.id))
-    
-    subjects = Subject.query.filter_by(course_id=course.id).all()
-    grades = {}
-    for subject in subjects:
-        grade = Grade.query.filter_by(student_id=student.id, subject_id=subject.id).first()
-        grades[subject.name] = grade.value if grade else 'Не оценено'
-    
-    faculty_name = student.faculty.name if student.faculty else None
-    
-    img_io = generate_certificate_image(student, grades, faculty_name)
-    
-    if img_io:
-        return send_file(img_io, mimetype='image/png', 
-                         download_name=f'certificate_{student.name.replace(" ", "_")}.png',
-                         as_attachment=False)
-    else:
-        flash('Шаблон для вашего факультета не найден, показана HTML версия', 'warning')
-        return render_template('certificate.html', 
-                             student=student, 
-                             course=course, 
-                             subjects=subjects, 
-                             grades=grades,
-                             faculties=Faculty.query.all())
-
-@app.route('/certificate_html/<int:student_id>')
-def certificate_html(student_id):
-    """HTML версия для предпросмотра"""
+    """HTML версия аттестата (можно распечатать)"""
     student = Student.query.get_or_404(student_id)
     course = Course.query.get(student.course_id)
     
@@ -215,132 +149,6 @@ def certificate_html(student_id):
                          subjects=subjects, 
                          grades=grades,
                          faculties=Faculty.query.all())
-
-def generate_certificate_image(student, grades, faculty_name):
-    """Генерирует изображение аттестата с точными координатами"""
-    
-    # Проверяем, установлен ли PIL
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-    except ImportError:
-        print("PIL не установлен, возвращаем None")
-        return None
-    
-    # Маппинг факультетов на названия файлов
-    faculty_map = {
-        'Гриффиндор': 'certificate_Gryffindor.png',
-        'Слизерин': 'certificate_Slytherin.png',
-        'Когтевран': 'certificate_Ravenclaw.png',
-        'Пуффендуй': 'certificate_Hufflepuff.png',
-    }
-    
-    template_file = faculty_map.get(faculty_name, 'certificate_Gryffindor.png')
-    template_path = os.path.join(app.static_folder, 'images', template_file)
-    
-    # Если шаблон не найден, пробуем другие варианты
-    if not os.path.exists(template_path):
-        images_dir = os.path.join(app.static_folder, 'images')
-        if os.path.exists(images_dir):
-            for file in os.listdir(images_dir):
-                if file.startswith('certificate_') and file.endswith('.png'):
-                    template_path = os.path.join(images_dir, file)
-                    break
-        else:
-            print(f"Папка images не найдена: {images_dir}")
-            return None
-    
-    if not os.path.exists(template_path):
-        print(f"Шаблон не найден: {template_path}")
-        return None
-    
-    try:
-        # Открываем шаблон
-        img = Image.open(template_path)
-        draw = ImageDraw.Draw(img)
-        
-        # Получаем размеры
-        width, height = img.size
-        print(f"Размер шаблона: {width}x{height}")
-        
-        # Загружаем шрифты
-        try:
-            font_name = ImageFont.truetype("arialbd.ttf", 36)
-            font_subject = ImageFont.truetype("arial.ttf", 24)
-            font_grade = ImageFont.truetype("arialbd.ttf", 24)
-            font_small = ImageFont.truetype("arial.ttf", 18)
-        except:
-            try:
-                font_name = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
-                font_subject = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
-                font_grade = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-                font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
-            except:
-                font_name = ImageFont.load_default()
-                font_subject = ImageFont.load_default()
-                font_grade = ImageFont.load_default()
-                font_small = ImageFont.load_default()
-        
-        # Координаты для текста (в пикселях)
-        name_x = int(width * 0.5)
-        name_y = int(height * 0.22)
-        
-        subjects_x = int(width * 0.2)
-        subjects_y_start = int(height * 0.33)
-        subjects_y_step = int(height * 0.048)
-        
-        grades_x = int(width * 0.7)
-        grades_y_start = int(height * 0.33)
-        grades_y_step = int(height * 0.048)
-        
-        # Список предметов для 7-го курса
-        subject_list = ['Заклинания', 'Зельеварение', 'Зоти', 'История магии', 
-                       'Маггловедение', 'Полёты на метле', 'Пропичания', 
-                       'Травология', 'Трансфигурация', 'УзМС']
-        
-        # Рисуем имя студента
-        name_color = '#c9a84c'
-        draw.text((name_x, name_y), student.name.upper(), 
-                 font=font_name, fill=name_color, anchor='mm')
-        
-        # Рисуем предметы и оценки
-        for idx, subject_name in enumerate(subject_list):
-            current_y = subjects_y_start + (idx * subjects_y_step)
-            
-            # Название предмета
-            draw.text((subjects_x, current_y), subject_name, 
-                     font=font_subject, fill='#d4b87a', anchor='rm')
-            
-            # Оценка
-            grade_value = grades.get(subject_name, 'Не оценено')
-            
-            if grade_value in ['Превосходно', 'Превосходчно', 'Превосодно']:
-                grade_color = '#ffd700'
-            elif grade_value == 'Выше ожидаемого':
-                grade_color = '#7ec8e3'
-            elif grade_value == 'Удовлетворительно':
-                grade_color = '#90ee90'
-            elif grade_value == 'Слабо':
-                grade_color = '#ffa07a'
-            elif grade_value == 'Провал':
-                grade_color = '#ff6b6b'
-            else:
-                grade_color = '#a08060'
-            
-            draw.text((grades_x, current_y), grade_value, 
-                     font=font_grade, fill=grade_color, anchor='lm')
-        
-        # Сохраняем в байтовый поток
-        img_io = io.BytesIO()
-        img.save(img_io, 'PNG', quality=95)
-        img_io.seek(0)
-        
-        return img_io
-        
-    except Exception as e:
-        print(f"Ошибка при генерации аттестата: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
 
 @app.route('/generate_all_certificates')
 def generate_all_certificates():
@@ -365,7 +173,7 @@ def generate_all_certificates():
     if missing_grades:
         flash(f'⚠️ Не все оценки выставлены у: {", ".join(missing_grades[:5])}', 'warning')
     else:
-        flash('✅ Все оценки выставлены! Аттестаты готовы к просмотру и скачиванию.', 'success')
+        flash('✅ Все оценки выставлены! Аттестаты готовы к просмотру и печати.', 'success')
     
     return redirect(url_for('course_view', course_id=course_7.id))
 
@@ -509,19 +317,7 @@ def init_database():
                 student = Student.query.filter_by(name=name).first()
                 if student:
                     for subj_name, grade_value in grades_data.items():
-                        subject_mapping = {
-                            'Заклинания': 'Заклинания',
-                            'ЗоТИ': 'ЗоТИ',
-                            'Зельеварение': 'Зельеварение',
-                            'История магии': 'История магии',
-                            'Травология': 'Травология',
-                            'Трансфигурация': 'Трансфигурация',
-                            'Маггловедение': 'Маггловедение',
-                            'УЗМС': 'УЗМС',
-                            'Прорицание': 'Прорицание',
-                        }
-                        real_name = subject_mapping.get(subj_name, subj_name)
-                        subject = Subject.query.filter_by(name=real_name, course_id=7).first()
+                        subject = Subject.query.filter_by(name=subj_name, course_id=7).first()
                         if subject:
                             grade = Grade.query.filter_by(student_id=student.id, subject_id=subject.id).first()
                             if grade:
