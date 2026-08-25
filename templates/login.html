@@ -4,46 +4,145 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход - Хогвартс</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Georgia', serif;
+            background: #1a0f0a;
+            color: #f5e6c8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            max-width: 400px;
+            width: 100%;
+            padding: 40px;
+            background: linear-gradient(145deg, #2a1a0a, #3d2817);
+            border-radius: 20px;
+            border: 2px solid #c9a84c;
+            text-align: center;
+        }
+        .login-box h1 {
+            color: #c9a84c;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .login-box h2 {
+            color: #d4b87a;
+            font-size: 18px;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            color: #d4b87a;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: #1a0f0a;
+            border: 1px solid #3d2817;
+            border-radius: 5px;
+            color: #f5e6c8;
+            font-size: 16px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #c9a84c;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #c9a84c;
+            color: #1a0f0a;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #dbb95c;
+            transform: scale(1.02);
+        }
+        .login-hint {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a0f0a;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #a08060;
+        }
+        .login-hint p { margin: 3px 0; }
+        .login-hint strong { color: #d4b87a; }
+        .btn-back {
+            display: inline-block;
+            margin-top: 15px;
+            color: #a08060;
+            text-decoration: none;
+        }
+        .btn-back:hover { color: #d4b87a; }
+        .flash-messages { margin: 15px 0; }
+        .flash-error {
+            background: rgba(255,0,0,0.2);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .flash-success {
+            background: rgba(0,255,0,0.2);
+            border: 1px solid #90ee90;
+            color: #90ee90;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="login-box">
-            <div class="hogwarts-logo">🏰</div>
-            <h1>Хогвартс</h1>
-            <h2>Вход для учителей</h2>
-            
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <div class="flash-messages">
-                        {% for message in messages %}
-                            <div class="flash-error">{{ message }}</div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-
-            <form method="POST" action="{{ url_for('login') }}">
-                <div class="form-group">
-                    <label for="username">Имя пользователя</label>
-                    <input type="text" id="username" name="username" required placeholder="Введите логин">
+    <div class="login-box">
+        <h1>🏰 Хогвартс</h1>
+        <h2>Вход для учителей</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
                 </div>
-                <div class="form-group">
-                    <label for="password">Пароль</label>
-                    <input type="password" id="password" name="password" required placeholder="Введите пароль">
-                </div>
-                <button type="submit" class="btn btn-primary">Войти</button>
-            </form>
+            {% endif %}
+        {% endwith %}
 
-            <div class="login-hint">
-                <p>Тестовые учителя:</p>
-                <p><strong>snape</strong> / snape123</p>
-                <p><strong>mcgonagall</strong> / mcgonagall123</p>
-                <p><strong>lana</strong> / lana123</p>
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Имя пользователя</label>
+                <input type="text" id="username" name="username" required placeholder="Введите логин">
             </div>
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" name="password" required placeholder="Введите пароль">
+            </div>
+            <button type="submit" class="btn">Войти</button>
+        </form>
 
-            <a href="{{ url_for('index') }}" class="btn-back">⬅️ Вернуться на главную</a>
+        <div class="login-hint">
+            <p>Тестовые учителя:</p>
+            <p><strong>snape</strong> / snape123</p>
+            <p><strong>mcgonagall</strong> / mcgonagall123</p>
+            <p><strong>lana</strong> / lana123</p>
         </div>
+
+        <a href="{{ url_for('index') }}" class="btn-back">⬅️ Вернуться на главную</a>
     </div>
 </body>
 </html>
