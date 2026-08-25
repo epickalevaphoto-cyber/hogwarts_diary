@@ -3,24 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хогвартс - Электронный дневник</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Hogwarts_diary</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Georgia', serif;
+            background: #1a0f0a;
+            color: #f5e6c8;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 3px solid #c9a84c;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 48px;
+            color: #c9a84c;
+            text-shadow: 0 0 40px rgba(201,168,76,0.3);
+        }
+        .header h2 {
+            font-size: 24px;
+            color: #d4b87a;
+            font-weight: normal;
+        }
+        .user-info {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #3d2817;
+            color: #f5e6c8;
+            text-decoration: none;
+            border-radius: 5px;
+            border: 1px solid #c9a84c;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #c9a84c;
+            color: #1a0f0a;
+        }
+        .btn-primary {
+            background: #c9a84c;
+            color: #1a0f0a;
+            font-weight: bold;
+        }
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .course-card {
+            background: linear-gradient(145deg, #2a1a0a, #3d2817);
+            border: 2px solid #c9a84c;
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #f5e6c8;
+            transition: all 0.3s ease;
+        }
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(201,168,76,0.2);
+        }
+        .course-number {
+            font-size: 48px;
+            color: #c9a84c;
+            font-weight: bold;
+        }
+        .course-title {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #d4b87a;
+        }
+        .course-students {
+            font-size: 14px;
+            color: #a08060;
+            margin-top: 8px;
+        }
+        .flash-messages {
+            margin: 20px 0;
+        }
+        .flash {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .flash-success { background: rgba(0,255,0,0.1); border: 1px solid #90ee90; color: #90ee90; }
+        .flash-error { background: rgba(255,0,0,0.1); border: 1px solid #ff6b6b; color: #ff6b6b; }
+        .flash-warning { background: rgba(255,255,0,0.1); border: 1px solid #ffd700; color: #ffd700; }
+        .flash-info { background: rgba(0,150,255,0.1); border: 1px solid #7ec8e3; color: #7ec8e3; }
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            text-align: center;
+            border-top: 1px solid #3d2817;
+            color: #a08060;
+            font-size: 14px;
+        }
+        .magic-text {
+            color: #c9a84c;
+            letter-spacing: 2px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header class="hogwarts-header">
+        <div class="header">
             <h1>🏰 Хогвартс</h1>
             <h2>Школа Чародейства и Волшебства</h2>
-            <p class="subtitle">Электронный дневник</p>
+            <p style="color: #a08060;">Электронный дневник</p>
             <div class="user-info">
-                {% if current_user.is_authenticated %}
-                    <span>👋 {{ current_user.name }}</span>
-                    <a href="{{ url_for('logout') }}" class="btn btn-small">Выйти</a>
+                {% if is_auth %}
+                    <span>👋 {{ session.get('teacher_name', 'Учитель') }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn">Выйти</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-small">Войти как учитель</a>
+                    <a href="{{ url_for('login') }}" class="btn">Войти как учитель</a>
                 {% endif %}
             </div>
-        </header>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
         <div class="courses-grid">
             {% for course in courses %}
@@ -34,7 +160,7 @@
 
         <footer>
             <p>© 2026 Хогвартс. Все права защищены.</p>
-            <p class="magic-text">VK.COM/MAGICHOGWARTS_SCHOOL</p>
+            <p class="magic-text">⚡ VK.COM/MAGICHOGWARTS_SCHOOL ⚡</p>
         </footer>
     </div>
 </body>
