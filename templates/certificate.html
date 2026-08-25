@@ -1,1 +1,209 @@
-.
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аттестат - {{ student.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .certificate {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background: linear-gradient(135deg, #2a1a0a 0%, #3d2817 50%, #2a1a0a 100%);
+            border: 10px solid #c9a84c;
+            border-radius: 20px;
+            color: #f5e6c8;
+            font-family: 'Georgia', serif;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .certificate::before {
+            content: '⚡';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 40px;
+            background: #2a1a0a;
+            padding: 0 20px;
+        }
+        .certificate-header {
+            text-align: center;
+            border-bottom: 3px solid #c9a84c;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .certificate-header h1 {
+            font-size: 28px;
+            letter-spacing: 3px;
+            color: #c9a84c;
+            text-shadow: 0 0 20px rgba(201,168,76,0.3);
+            margin: 0;
+        }
+        .certificate-header h2 {
+            font-size: 18px;
+            color: #d4b87a;
+            font-weight: normal;
+            margin: 5px 0;
+        }
+        .certificate-title {
+            text-align: center;
+            font-size: 32px;
+            color: #c9a84c;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 30px rgba(201,168,76,0.2);
+        }
+        .student-name-cert {
+            text-align: center;
+            font-size: 36px;
+            color: #f5e6c8;
+            margin: 20px 0 30px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .grades-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .grades-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(201,168,76,0.3);
+        }
+        .grades-table .subject {
+            font-size: 18px;
+            color: #d4b87a;
+        }
+        .grades-table .grade-value {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .grade-excellent { color: #ffd700; }
+        .grade-above { color: #7ec8e3; }
+        .grade-satisfactory { color: #90ee90; }
+        .grade-poor { color: #ffa07a; }
+        .grade-fail { color: #ff6b6b; }
+        .certificate-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 3px solid #c9a84c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .signature {
+            text-align: center;
+        }
+        .signature .name {
+            font-size: 18px;
+            color: #c9a84c;
+        }
+        .signature .title {
+            font-size: 14px;
+            color: #a08060;
+        }
+        .certificate-date {
+            text-align: center;
+            color: #a08060;
+            font-size: 14px;
+        }
+        .certificate-magic {
+            text-align: center;
+            margin-top: 20px;
+            color: #a08060;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        .btn-back {
+            display: inline-block;
+            margin: 20px auto;
+            padding: 10px 30px;
+            background: #c9a84c;
+            color: #2a1a0a;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: #dbb95c;
+            transform: scale(1.05);
+        }
+        .print-btn {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 30px;
+            background: #4a6a8a;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        .print-btn:hover {
+            background: #5a7a9a;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .certificate { box-shadow: none; border: 2px solid #c9a84c; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="no-print" style="text-align: center; margin: 20px 0;">
+            <a href="{{ url_for('course_view', course_id=course.id) }}" class="btn-back">⬅️ Вернуться к журналу</a>
+            <button onclick="window.print()" class="print-btn">🖨️ Распечатать аттестат</button>
+        </div>
+
+        <div class="certificate">
+            <div class="certificate-header">
+                <h1>HOGWARTS SCHOOL OF</h1>
+                <h2>WITCHCRAFT AND WIZARDRY</h2>
+            </div>
+
+            <div class="certificate-title"># СЕРТИФИКАТ О ЗАВЕРШЕНИИ</div>
+
+            <div class="student-name-cert">{{ student.name }}</div>
+
+            <table class="grades-table">
+                {% for subject in subjects %}
+                    <tr>
+                        <td class="subject">{{ subject.name }}</td>
+                        <td class="grade-value 
+                            {% if grades[subject.name] == 'Превосходно' %}grade-excellent
+                            {% elif grades[subject.name] == 'Выше ожидаемого' %}grade-above
+                            {% elif grades[subject.name] == 'Удовлетворительно' %}grade-satisfactory
+                            {% elif grades[subject.name] == 'Слабо' %}grade-poor
+                            {% elif grades[subject.name] == 'Провал' %}grade-fail
+                            {% endif %}">
+                            {{ grades[subject.name] }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+            <div class="certificate-footer">
+                <div class="signature">
+                    <div class="name">Декан Факультета</div>
+                    <div class="title">Filius Aitwick</div>
+                </div>
+                <div class="signature">
+                    <div class="name">ДИРЕКТОР</div>
+                    <div class="title">Lana McDowell</div>
+                </div>
+            </div>
+
+            <div class="certificate-date">29 July, 2026</div>
+            <div class="certificate-magic">VK.COM/MAGICHOGWARTS_SCHOOL</div>
+            <div class="certificate-magic" style="margin-top: 5px; font-size: 10px;">MAGIC HOGWARTS SCHOOL</div>
+        </div>
+    </div>
+</body>
+</html>
