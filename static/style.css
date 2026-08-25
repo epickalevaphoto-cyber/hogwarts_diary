@@ -1,1 +1,163 @@
-.
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #1a0f0a;
+    color: #f5e6c8;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.hogwarts-header {
+    text-align: center;
+    padding: 30px 0;
+    border-bottom: 3px solid #c9a84c;
+    margin-bottom: 30px;
+    background: linear-gradient(180deg, #2a1a0a 0%, transparent 100%);
+}
+
+.hogwarts-header h1 {
+    font-size: 48px;
+    color: #c9a84c;
+    text-shadow: 0 0 40px rgba(201,168,76,0.3);
+    letter-spacing: 5px;
+}
+
+.hogwarts-header h2 {
+    font-size: 24px;
+    color: #d4b87a;
+    font-weight: normal;
+    margin: 5px 0;
+}
+
+.hogwarts-header .subtitle {
+    font-size: 18px;
+    color: #a08060;
+    letter-spacing: 2px;
+}
+
+.user-info {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.course-card {
+    background: linear-gradient(145deg, #2a1a0a, #3d2817);
+    border: 2px solid #c9a84c;
+    border-radius: 15px;
+    padding: 30px 20px;
+    text-align: center;
+    text-decoration: none;
+    color: #f5e6c8;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px rgba(201,168,76,0.2);
+    border-color: #ffd700;
+}
+
+.course-number {
+    font-size: 48px;
+    color: #c9a84c;
+    font-weight: bold;
+}
+
+.course-title {
+    font-size: 20px;
+    margin-top: 10px;
+    color: #d4b87a;
+}
+
+.course-students {
+    font-size: 14px;
+    color: #a08060;
+    margin-top: 8px;
+}
+
+/* Gradebook */
+.gradebook {
+    overflow-x: auto;
+    background: #2a1a0a;
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid #3d2817;
+}
+
+.gradebook table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.gradebook th {
+    background: #3d2817;
+    color: #c9a84c;
+    padding: 12px;
+    font-weight: bold;
+    border-bottom: 2px solid #c9a84c;
+}
+
+.gradebook td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #3d2817;
+    text-align: center;
+}
+
+.gradebook .student-name {
+    text-align: left;
+    font-weight: bold;
+    color: #d4b87a;
+}
+
+.grade-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.grade-input {
+    width: 120px;
+    padding: 5px 8px;
+    background: #1a0f0a;
+    border: 1px solid #3d2817;
+    border-radius: 5px;
+    color: #f5e6c8;
+    font-size: 14px;
+    text-align: center;
+}
+
+.grade-input:focus {
+    outline: none;
+    border-color: #c9a84c;
+}
+
+.grade-view {
+    padding: 4px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.grade
