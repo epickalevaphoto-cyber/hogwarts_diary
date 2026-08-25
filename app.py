@@ -24,7 +24,7 @@ class Faculty(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     color = db.Column(db.String(20))
-    dean = db.Column(db.String(100))  # Декан факультета
+    dean = db.Column(db.String(100))
     students = db.relationship('Student', backref='faculty', lazy=True)
 
 class Course(db.Model):
@@ -143,10 +143,8 @@ def certificate(student_id):
         grade = Grade.query.filter_by(student_id=student.id, subject_id=subject.id).first()
         grades[subject.name] = grade.value if grade else 'Не оценено'
     
-    # Определяем факультет студента
     faculty_name = student.faculty.name if student.faculty else None
     
-    # Генерируем изображение аттестата для конкретного факультета
     img_io = generate_certificate_image(student, grades, faculty_name)
     
     if img_io:
@@ -154,7 +152,6 @@ def certificate(student_id):
                          download_name=f'certificate_{student.name.replace(" ", "_")}.png',
                          as_attachment=False)
     else:
-        # Если шаблон не найден, показываем HTML версию
         flash('Шаблон для вашего факультета не найден, показана HTML версия', 'warning')
         return render_template('certificate.html', 
                              student=student, 
@@ -187,7 +184,7 @@ def certificate_html(student_id):
                          faculties=Faculty.query.all())
 
 def generate_certificate_image(student, grades, faculty_name):
-    """Генерирует изображение аттестата на основе шаблона факультета"""
+    """Генерирует изображение аттестата с точными координатами"""
     
     # Маппинг факультетов на названия файлов
     faculty_map = {
@@ -197,19 +194,16 @@ def generate_certificate_image(student, grades, faculty_name):
         'Пуффендуй': 'certificate_Hufflepuff.png',
     }
     
-    # Определяем шаблон для факультета
     template_file = faculty_map.get(faculty_name, 'certificate_Gryffindor.png')
     template_path = os.path.join(app.static_folder, 'images', template_file)
     
     # Если шаблон не найден, пробуем другие варианты
     if not os.path.exists(template_path):
-        # Пробуем найти любой шаблон
         for file in os.listdir(os.path.join(app.static_folder, 'images')):
             if file.startswith('certificate_') and file.endswith('.png'):
                 template_path = os.path.join(app.static_folder, 'images', file)
                 break
         else:
-            # Если шаблонов нет, возвращаем None
             return None
     
     try:
@@ -217,90 +211,107 @@ def generate_certificate_image(student, grades, faculty_name):
         img = Image.open(template_path)
         draw = ImageDraw.Draw(img)
         
+        # Получаем размеры
+        width, height = img.size
+        print(f"Размер шаблона: {width}x{height}")
+        
         # Загружаем шрифты
         try:
-            font_large = ImageFont.truetype("arial.ttf", 36)
-            font_medium = ImageFont.truetype("arial.ttf", 28)
-            font_small = ImageFont.truetype("arial.ttf", 20)
+            font_name = ImageFont.truetype("arialbd.ttf", 36)
+            font_subject = ImageFont.truetype("arial.ttf", 24)
+            font_grade = ImageFont.truetype("arialbd.ttf", 24)
+            font_small = ImageFont.truetype("arial.ttf", 18)
         except:
             try:
-                font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
-                font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
-                font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
+                font_name = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
+                font_subject = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+                font_grade = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+                font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
             except:
-                font_large = ImageFont.load_default()
-                font_medium = ImageFont.load_default()
+                font_name = ImageFont.load_default()
+                font_subject = ImageFont.load_default()
+                font_grade = ImageFont.load_default()
                 font_small = ImageFont.load_default()
         
-        width, height = img.size
+        # ТОЧНЫЕ КООРДИНАТЫ ДЛЯ ВАШЕГО ШАБЛОНА
+        # Основаны на изображении размером ~800x900px
+        # При необходимости скорректируйте значения
         
-        # Координаты для текста (настройте под ваш шаблон)
-        # Здесь нужно подобрать позиции в зависимости от вашего шаблона
+        # Масштабирование координат в зависимости от размера изображения
+        scale_x = width / 800
+        scale_y = height / 900
         
-        # Позиция для имени (обычно в центре сверху)
-        name_position = (width//2, 180)
+        # Координаты для текста (в пикселях)
+        # Имя студента (центр)
+        name_x = int(width * 0.5)
+        name_y = int(height * 0.22)
         
-        # Позиции для предметов и оценок
-        subject_positions = [
-            (150, 300),  # Заклинания
-            (150, 340),  # Зельеварение
-            (150, 380),  # Зоти
-            (150, 420),  # История магии
-            (150, 460),  # Маггловедение
-            (150, 500),  # Полёты на метле
-            (150, 540),  # Пропичания
-            (150, 580),  # Травология
-            (150, 620),  # Трансфигурация
-            (150, 660),  # УзМС
-        ]
+        # Предметы (левый столбец) - X фиксирован, Y с шагом
+        subjects_x = int(width * 0.2)
+        subjects_y_start = int(height * 0.33)
+        subjects_y_step = int(height * 0.048)
         
-        grade_positions = [
-            (500, 300),  # Заклинания
-            (500, 340),  # Зельеварение
-            (500, 380),  # Зоти
-            (500, 420),  # История магии
-            (500, 460),  # Маггловедение
-            (500, 500),  # Полёты на метле
-            (500, 540),  # Пропичания
-            (500, 580),  # Травология
-            (500, 620),  # Трансфигурация
-            (500, 660),  # УзМС
-        ]
+        # Оценки (правый столбец) - X фиксирован, Y с шагом
+        grades_x = int(width * 0.7)
+        grades_y_start = int(height * 0.33)
+        grades_y_step = int(height * 0.048)
         
-        # Список предметов в порядке для 7-го курса
+        # Список предметов в правильном порядке для 7-го курса
         subject_list = ['Заклинания', 'Зельеварение', 'Зоти', 'История магии', 
                        'Маггловедение', 'Полёты на метле', 'Пропичания', 
                        'Травология', 'Трансфигурация', 'УзМС']
         
-        # Рисуем имя студента
-        draw.text(name_position, student.name, font=font_large, fill='#c9a84c', anchor='mm')
+        # Рисуем имя студента (золотым цветом, по центру, заглавными)
+        name_color = '#c9a84c'
+        draw.text((name_x, name_y), student.name.upper(), 
+                 font=font_name, fill=name_color, anchor='mm')
         
         # Рисуем предметы и оценки
         for idx, subject_name in enumerate(subject_list):
-            if idx < len(subject_positions):
-                # Название предмета
-                draw.text(subject_positions[idx], subject_name, 
-                         font=font_medium, fill='#d4b87a', anchor='lm')
-                
-                # Оценка
-                grade_value = grades.get(subject_name, 'Не оценено')
-                
-                # Цвет оценки в зависимости от значения
-                if grade_value == 'Превосходно' or grade_value == 'Превосходчно' or grade_value == 'Превосодно':
-                    grade_color = '#ffd700'
-                elif grade_value == 'Выше ожидаемого':
-                    grade_color = '#7ec8e3'
-                elif grade_value == 'Удовлетворительно':
-                    grade_color = '#90ee90'
-                elif grade_value == 'Слабо':
-                    grade_color = '#ffa07a'
-                elif grade_value == 'Провал':
-                    grade_color = '#ff6b6b'
-                else:
-                    grade_color = '#a08060'
-                
-                draw.text(grade_positions[idx], grade_value, 
-                         font=font_medium, fill=grade_color, anchor='rm')
+            # Y координата для текущей строки
+            current_y = subjects_y_start + (idx * subjects_y_step)
+            
+            # Название предмета (светло-золотой)
+            draw.text((subjects_x, current_y), subject_name, 
+                     font=font_subject, fill='#d4b87a', anchor='rm')
+            
+            # Оценка
+            grade_value = grades.get(subject_name, 'Не оценено')
+            
+            # Определяем цвет оценки
+            if grade_value in ['Превосходно', 'Превосходчно', 'Превосодно']:
+                grade_color = '#ffd700'  # Золотой
+            elif grade_value == 'Выше ожидаемого':
+                grade_color = '#7ec8e3'  # Голубой
+            elif grade_value == 'Удовлетворительно':
+                grade_color = '#90ee90'  # Зеленый
+            elif grade_value == 'Слабо':
+                grade_color = '#ffa07a'  # Оранжевый
+            elif grade_value == 'Провал':
+                grade_color = '#ff6b6b'  # Красный
+            else:
+                grade_color = '#a08060'  # Серый
+            
+            # Рисуем оценку
+            draw.text((grades_x, current_y), grade_value, 
+                     font=font_grade, fill=grade_color, anchor='lm')
+        
+        # Добавляем подписи внизу (если есть место)
+        # Декан факультета
+        if student.faculty and student.faculty.dean:
+            dean_y = int(height * 0.88)
+            draw.text((int(width * 0.25), dean_y), f"Декан: {student.faculty.dean}", 
+                     font=font_small, fill='#a08060', anchor='mm')
+        
+        # Директор
+        director_y = int(height * 0.88)
+        draw.text((int(width * 0.75), director_y), "Директор: Lana McDowell", 
+                 font=font_small, fill='#a08060', anchor='mm')
+        
+        # Дата
+        date_y = int(height * 0.93)
+        draw.text((int(width * 0.5), date_y), "29 JULY, 2026", 
+                 font=font_small, fill='#a08060', anchor='mm')
         
         # Сохраняем в байтовый поток
         img_io = io.BytesIO()
@@ -311,6 +322,8 @@ def generate_certificate_image(student, grades, faculty_name):
         
     except Exception as e:
         print(f"Ошибка при генерации аттестата: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 @app.route('/generate_all_certificates')
@@ -340,7 +353,6 @@ def generate_all_certificates():
     
     return redirect(url_for('course_view', course_id=course_7.id))
 
-# Инициализация базы данных
 def init_database():
     with app.app_context():
         db.create_all()
@@ -440,7 +452,7 @@ def init_database():
             
             db.session.commit()
             
-            # Добавляем оценки для 7-го курса как на примерах
+            # Добавляем оценки для 7-го курса
             grades_7 = [
                 ('Thierry Alan Focelman', {
                     'Заклинания': 'Превосходно',
@@ -492,7 +504,21 @@ def init_database():
                 student = Student.query.filter_by(name=name).first()
                 if student:
                     for subj_name, grade_value in grades_data.items():
-                        subject = Subject.query.filter_by(name=subj_name, course_id=7).first()
+                        # Для 7-го курса предметы могут называться по-другому
+                        # Сопоставляем названия
+                        subject_mapping = {
+                            'Заклинания': 'Заклинания',
+                            'ЗоТИ': 'ЗоТИ',
+                            'Зельеварение': 'Зельеварение',
+                            'История магии': 'История магии',
+                            'Травология': 'Травология',
+                            'Трансфигурация': 'Трансфигурация',
+                            'Маггловедение': 'Маггловедение',
+                            'УЗМС': 'УЗМС',
+                            'Прорицание': 'Прорицание',
+                        }
+                        real_name = subject_mapping.get(subj_name, subj_name)
+                        subject = Subject.query.filter_by(name=real_name, course_id=7).first()
                         if subject:
                             grade = Grade.query.filter_by(student_id=student.id, subject_id=subject.id).first()
                             if grade:
