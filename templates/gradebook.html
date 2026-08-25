@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ course.year }} курс - Хогвартс</title>
     <style>
+        /* Все стили как в предыдущей версии */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Georgia', serif;
@@ -12,11 +13,7 @@
             color: #f5e6c8;
             min-height: 100vh;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header {
             text-align: center;
             padding: 30px 0;
@@ -48,6 +45,14 @@
         .btn-certificate { background: #4a6a8a; border-color: #5a8aaa; }
         .btn-certificate:hover { background: #5a8aaa; color: white; }
         .btn-small { padding: 5px 15px; font-size: 14px; }
+        .btn-gryffindor { background: #ae0001; border-color: #ae0001; color: white; }
+        .btn-gryffindor:hover { background: #d40000; }
+        .btn-slytherin { background: #1a472a; border-color: #1a472a; color: white; }
+        .btn-slytherin:hover { background: #2a5a3a; }
+        .btn-ravenclaw { background: #0e1a40; border-color: #0e1a40; color: white; }
+        .btn-ravenclaw:hover { background: #1a2a60; }
+        .btn-hufflepuff { background: #ffdb58; border-color: #ffdb58; color: #1a0f0a; }
+        .btn-hufflepuff:hover { background: #ffeb78; }
         .admin-actions {
             text-align: center;
             margin: 20px 0;
@@ -76,6 +81,14 @@
             text-align: center;
         }
         .gradebook .student-name { text-align: left; font-weight: bold; color: #d4b87a; }
+        .student-faculty {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: white;
+            margin-left: 5px;
+        }
         .grade-cell { display: flex; align-items: center; justify-content: center; gap: 5px; }
         .grade-input {
             width: 120px;
@@ -117,6 +130,16 @@
             font-size: 14px;
         }
         .magic-text { color: #c9a84c; letter-spacing: 2px; font-size: 12px; }
+        .certificate-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        @media (max-width: 768px) {
+            .grade-input { width: 80px; font-size: 12px; }
+            .certificate-actions { flex-direction: column; align-items: center; }
+        }
     </style>
 </head>
 <body>
@@ -158,6 +181,7 @@
                 <thead>
                     <tr>
                         <th>Студент</th>
+                        <th>Факультет</th>
                         {% for subject in subjects %}
                             <th>{{ subject.name }}</th>
                         {% endfor %}
@@ -170,6 +194,13 @@
                     {% for student in students %}
                         <tr>
                             <td class="student-name">{{ student.name }}</td>
+                            <td>
+                                {% if student.faculty %}
+                                    <span class="student-faculty" style="background: {{ student.faculty.color }};">
+                                        {{ student.faculty.name }}
+                                    </span>
+                                {% endif %}
+                            </td>
                             {% for subject in subjects %}
                                 <td>
                                     <div class="grade-cell">
@@ -206,9 +237,16 @@
                             {% endfor %}
                             {% if course.year == 7 %}
                                 <td>
-                                    <a href="{{ url_for('certificate', student_id=student.id) }}" class="btn btn-certificate btn-small">
-                                        📜 Смотреть
-                                    </a>
+                                    <div class="certificate-actions">
+                                        <a href="{{ url_for('certificate', student_id=student.id) }}" 
+                                           class="btn btn-certificate btn-small" target="_blank">
+                                            📥 PNG
+                                        </a>
+                                        <a href="{{ url_for('certificate_html', student_id=student.id) }}" 
+                                           class="btn btn-small" target="_blank">
+                                            👁️ HTML
+                                        </a>
+                                    </div>
                                 </td>
                             {% endif %}
                         </tr>
