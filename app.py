@@ -2,8 +2,33 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
-from PIL import Image, ImageDraw, ImageFont
 import io
+import sys
+
+# Проверка версии Python
+print(f"Python version: {sys.version}")
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    print("PIL loaded successfully")
+except ImportError as e:
+    print(f"Error importing PIL: {e}")
+    # Создаем заглушку, если PIL не установлен
+    class Image:
+        @staticmethod
+        def open(*args, **kwargs):
+            return None
+    class ImageDraw:
+        @staticmethod
+        def Draw(*args, **kwargs):
+            return None
+    class ImageFont:
+        @staticmethod
+        def truetype(*args, **kwargs):
+            return None
+        @staticmethod
+        def load_default():
+            return None
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hogwarts_secret_key_2026'
@@ -186,6 +211,13 @@ def certificate_html(student_id):
 def generate_certificate_image(student, grades, faculty_name):
     """Генерирует изображение аттестата с точными координатами"""
     
+    # Проверяем, установлен ли PIL
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        print("PIL не установлен, возвращаем None")
+        return None
+    
     # Маппинг факультетов на названия файлов
     faculty_map = {
         'Гриффиндор': 'certificate_Gryffindor.png',
@@ -199,12 +231,19 @@ def generate_certificate_image(student, grades, faculty_name):
     
     # Если шаблон не найден, пробуем другие варианты
     if not os.path.exists(template_path):
-        for file in os.listdir(os.path.join(app.static_folder, 'images')):
-            if file.startswith('certificate_') and file.endswith('.png'):
-                template_path = os.path.join(app.static_folder, 'images', file)
-                break
+        images_dir = os.path.join(app.static_folder, 'images')
+        if os.path.exists(images_dir):
+            for file in os.listdir(images_dir):
+                if file.startswith('certificate_') and file.endswith('.png'):
+                    template_path = os.path.join(images_dir, file)
+                    break
         else:
+            print(f"Папка images не найдена: {images_dir}")
             return None
+    
+    if not os.path.exists(template_path):
+        print(f"Шаблон не найден: {template_path}")
+        return None
     
     try:
         # Открываем шаблон
@@ -233,85 +272,54 @@ def generate_certificate_image(student, grades, faculty_name):
                 font_grade = ImageFont.load_default()
                 font_small = ImageFont.load_default()
         
-        # ТОЧНЫЕ КООРДИНАТЫ ДЛЯ ВАШЕГО ШАБЛОНА
-        # Основаны на изображении размером ~800x900px
-        # При необходимости скорректируйте значения
-        
-        # Масштабирование координат в зависимости от размера изображения
-        scale_x = width / 800
-        scale_y = height / 900
-        
         # Координаты для текста (в пикселях)
-        # Имя студента (центр)
         name_x = int(width * 0.5)
         name_y = int(height * 0.22)
         
-        # Предметы (левый столбец) - X фиксирован, Y с шагом
         subjects_x = int(width * 0.2)
         subjects_y_start = int(height * 0.33)
         subjects_y_step = int(height * 0.048)
         
-        # Оценки (правый столбец) - X фиксирован, Y с шагом
         grades_x = int(width * 0.7)
         grades_y_start = int(height * 0.33)
         grades_y_step = int(height * 0.048)
         
-        # Список предметов в правильном порядке для 7-го курса
+        # Список предметов для 7-го курса
         subject_list = ['Заклинания', 'Зельеварение', 'Зоти', 'История магии', 
                        'Маггловедение', 'Полёты на метле', 'Пропичания', 
                        'Травология', 'Трансфигурация', 'УзМС']
         
-        # Рисуем имя студента (золотым цветом, по центру, заглавными)
+        # Рисуем имя студента
         name_color = '#c9a84c'
         draw.text((name_x, name_y), student.name.upper(), 
                  font=font_name, fill=name_color, anchor='mm')
         
         # Рисуем предметы и оценки
         for idx, subject_name in enumerate(subject_list):
-            # Y координата для текущей строки
             current_y = subjects_y_start + (idx * subjects_y_step)
             
-            # Название предмета (светло-золотой)
+            # Название предмета
             draw.text((subjects_x, current_y), subject_name, 
                      font=font_subject, fill='#d4b87a', anchor='rm')
             
             # Оценка
             grade_value = grades.get(subject_name, 'Не оценено')
             
-            # Определяем цвет оценки
             if grade_value in ['Превосходно', 'Превосходчно', 'Превосодно']:
-                grade_color = '#ffd700'  # Золотой
+                grade_color = '#ffd700'
             elif grade_value == 'Выше ожидаемого':
-                grade_color = '#7ec8e3'  # Голубой
+                grade_color = '#7ec8e3'
             elif grade_value == 'Удовлетворительно':
-                grade_color = '#90ee90'  # Зеленый
+                grade_color = '#90ee90'
             elif grade_value == 'Слабо':
-                grade_color = '#ffa07a'  # Оранжевый
+                grade_color = '#ffa07a'
             elif grade_value == 'Провал':
-                grade_color = '#ff6b6b'  # Красный
+                grade_color = '#ff6b6b'
             else:
-                grade_color = '#a08060'  # Серый
+                grade_color = '#a08060'
             
-            # Рисуем оценку
             draw.text((grades_x, current_y), grade_value, 
                      font=font_grade, fill=grade_color, anchor='lm')
-        
-        # Добавляем подписи внизу (если есть место)
-        # Декан факультета
-        if student.faculty and student.faculty.dean:
-            dean_y = int(height * 0.88)
-            draw.text((int(width * 0.25), dean_y), f"Декан: {student.faculty.dean}", 
-                     font=font_small, fill='#a08060', anchor='mm')
-        
-        # Директор
-        director_y = int(height * 0.88)
-        draw.text((int(width * 0.75), director_y), "Директор: Lana McDowell", 
-                 font=font_small, fill='#a08060', anchor='mm')
-        
-        # Дата
-        date_y = int(height * 0.93)
-        draw.text((int(width * 0.5), date_y), "29 JULY, 2026", 
-                 font=font_small, fill='#a08060', anchor='mm')
         
         # Сохраняем в байтовый поток
         img_io = io.BytesIO()
@@ -358,18 +366,16 @@ def init_database():
         db.create_all()
         
         if Teacher.query.count() == 0:
-            # Создаем факультеты с деканами
+            # Создаем факультеты
             faculties_data = [
                 {'name': 'Гриффиндор', 'color': '#ae0001', 'dean': 'Minerva McGonagall'},
                 {'name': 'Слизерин', 'color': '#1a472a', 'dean': 'Severus Snape'},
                 {'name': 'Когтевран', 'color': '#0e1a40', 'dean': 'Filius Aitwick'},
                 {'name': 'Пуффендуй', 'color': '#ffdb58', 'dean': 'Danna Serrut'},
             ]
-            faculties = []
             for f in faculties_data:
                 faculty = Faculty(**f)
                 db.session.add(faculty)
-                faculties.append(faculty)
             db.session.flush()
             
             # Создаем учителей
@@ -388,12 +394,10 @@ def init_database():
             subjects_1 = ['Заклинания', 'Трансфигурация', 'Зельеварение', 'История магии', 'Травология', 'ЗоТИ', 'Маггловедение', 'Полеты на метле']
             subjects_2_7 = ['Заклинания', 'ЗоТИ', 'Зельеварение', 'История магии', 'Травология', 'Трансфигурация', 'Маггловедение', 'УЗМС', 'Прорицание']
             
-            courses = []
             for year in range(1, 8):
                 course = Course(year=year)
                 db.session.add(course)
                 db.session.flush()
-                courses.append(course)
                 
                 subjects = subjects_1 if year == 1 else subjects_2_7
                 for subj_name in subjects:
@@ -404,33 +408,26 @@ def init_database():
             
             # Добавляем студентов
             students_data = [
-                # 1 курс
                 {'name': 'Гарри Поттер', 'course': 1, 'faculty': 'Гриффиндор'},
                 {'name': 'Гермиона Грейнджер', 'course': 1, 'faculty': 'Гриффиндор'},
                 {'name': 'Рон Уизли', 'course': 1, 'faculty': 'Гриффиндор'},
                 {'name': 'Драко Малфой', 'course': 1, 'faculty': 'Слизерин'},
                 {'name': 'Невилл Долгопупс', 'course': 1, 'faculty': 'Гриффиндор'},
-                # 2 курс
                 {'name': 'Луна Лавгуд', 'course': 2, 'faculty': 'Когтевран'},
                 {'name': 'Джинни Уизли', 'course': 2, 'faculty': 'Гриффиндор'},
                 {'name': 'Колин Криви', 'course': 2, 'faculty': 'Гриффиндор'},
-                # 3 курс
                 {'name': 'Сириус Блэк', 'course': 3, 'faculty': 'Гриффиндор'},
                 {'name': 'Римус Люпин', 'course': 3, 'faculty': 'Гриффиндор'},
                 {'name': 'Питер Петтигрю', 'course': 3, 'faculty': 'Гриффиндор'},
-                # 4 курс
                 {'name': 'Виктор Крам', 'course': 4, 'faculty': 'Слизерин'},
                 {'name': 'Седрик Диггори', 'course': 4, 'faculty': 'Пуффендуй'},
                 {'name': 'Флер Делакур', 'course': 4, 'faculty': 'Когтевран'},
-                # 5 курс
                 {'name': 'Джеймс Поттер', 'course': 5, 'faculty': 'Гриффиндор'},
                 {'name': 'Лили Эванс', 'course': 5, 'faculty': 'Гриффиндор'},
                 {'name': 'Северус Снейп', 'course': 5, 'faculty': 'Слизерин'},
-                # 6 курс
                 {'name': 'Том Реддл', 'course': 6, 'faculty': 'Слизерин'},
                 {'name': 'Альбус Дамблдор', 'course': 6, 'faculty': 'Гриффиндор'},
                 {'name': 'Геллерт Грин-де-Вальд', 'course': 6, 'faculty': 'Когтевран'},
-                # 7 курс
                 {'name': 'Thierry Alan Focelman', 'course': 7, 'faculty': 'Гриффиндор'},
                 {'name': 'Amelia Rubin Audley', 'course': 7, 'faculty': 'Слизерин'},
                 {'name': 'Agatha Grimm', 'course': 7, 'faculty': 'Когтевран'},
@@ -504,8 +501,6 @@ def init_database():
                 student = Student.query.filter_by(name=name).first()
                 if student:
                     for subj_name, grade_value in grades_data.items():
-                        # Для 7-го курса предметы могут называться по-другому
-                        # Сопоставляем названия
                         subject_mapping = {
                             'Заклинания': 'Заклинания',
                             'ЗоТИ': 'ЗоТИ',
