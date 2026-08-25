@@ -1,3 +1,11 @@
+import sys
+print(f"🐍 Python version: {sys.version}")
+print(f"📍 Running on: {sys.platform}")
+
+# Проверяем совместимость
+if sys.version_info >= (3, 14):
+    print("⚠️ WARNING: Python 3.14+ may have compatibility issues with Pillow")
+    
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
