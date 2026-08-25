@@ -1,1 +1,134 @@
-.
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.year }} курс - Хогвартс</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="hogwarts-header">
+            <h1>🏰 Хогвартс</h1>
+            <h2>{{ course.year }} курс</h2>
+            <div class="user-info">
+                {% if current_user.is_authenticated %}
+                    <span>👋 {{ current_user.name }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-small">Выйти</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-small">Войти как учитель</a>
+                {% endif %}
+                <a href="{{ url_for('index') }}" class="btn btn-small">⬅️ Назад</a>
+            </div>
+        </header>
+
+        {% if course.year == 7 and current_user.is_authenticated %}
+            <div class="admin-actions">
+                <a href="{{ url_for('generate_all_certificates') }}" class="btn btn-primary">
+                    🎓 Сгенерировать аттестаты для всех
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="gradebook">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Студент</th>
+                        {% for subject in subjects %}
+                            <th>{{ subject.name }}</th>
+                        {% endfor %}
+                        {% if course.year == 7 %}
+                            <th>🎓 Аттестат</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                        <tr>
+                            <td class="student-name">{{ student.name }}</td>
+                            {% for subject in subjects %}
+                                <td>
+                                    <div class="grade-cell">
+                                        {% if is_teacher %}
+                                            <input type="text" 
+                                                   class="grade-input" 
+                                                   data-student="{{ student.id }}" 
+                                                   data-subject="{{ subject.id }}"
+                                                   value="{{ grades_data[student.id][subject.id] if grades_data[student.id][subject.id] else '' }}"
+                                                   placeholder="—"
+                                                   list="grade-options">
+                                            <datalist id="grade-options">
+                                                <option value="Превосходно">Превосходно</option>
+                                                <option value="Выше ожидаемого">Выше ожидаемого</option>
+                                                <option value="Удовлетворительно">Удовлетворительно</option>
+                                                <option value="Слабо">Слабо</option>
+                                                <option value="Провал">Провал</option>
+                                            </datalist>
+                                            <span class="grade-status" id="status-{{ student.id }}-{{ subject.id }}"></span>
+                                        {% else %}
+                                            <span class="grade-view {% if grades_data[student.id][subject.id] %}{{ get_grade_color(grades_data[student.id][subject.id]) }}{% endif %}">
+                                                {{ grades_data[student.id][subject.id] if grades_data[student.id][subject.id] else '—' }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            {% endfor %}
+                            {% if course.year == 7 %}
+                                <td>
+                                    <a href="{{ url_for('certificate', student_id=student.id) }}" class="btn btn-certificate">
+                                        📜 Смотреть
+                                    </a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>© 2026 Хогвартс. Все права защищены.</p>
+            <p class="magic-text">VK.COM/MAGICHOGWARTS_SCHOOL</p>
+        </footer>
+    </div>
+
+    {% if is_teacher %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.grade-input');
+            
+            inputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const studentId = this.dataset.student;
+                    const subjectId = this.dataset.subject;
+                    const value = this.value;
+                    const statusSpan = document.getElementById(`status-${studentId}-${subjectId}`);
+                    
+                    fetch('/update_grade', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `student_id=${studentId}&subject_id=${subjectId}&value=${encodeURIComponent(value)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusSpan.textContent = '✓';
+                            statusSpan.style.color = 'green';
+                            setTimeout(() => {
+                                statusSpan.textContent = '';
+                            }, 2000);
+                        } else {
+                            statusSpan.textContent = '✗';
+                            statusSpan.style.color = 'red';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
