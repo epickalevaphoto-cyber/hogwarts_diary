@@ -1,1 +1,41 @@
-.
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Хогвартс - Электронный дневник</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="hogwarts-header">
+            <h1>🏰 Хогвартс</h1>
+            <h2>Школа Чародейства и Волшебства</h2>
+            <p class="subtitle">Электронный дневник</p>
+            <div class="user-info">
+                {% if current_user.is_authenticated %}
+                    <span>👋 {{ current_user.name }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-small">Выйти</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-small">Войти как учитель</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <div class="courses-grid">
+            {% for course in courses %}
+                <a href="{{ url_for('course_view', course_id=course.id) }}" class="course-card">
+                    <div class="course-number">{{ course.year }}</div>
+                    <div class="course-title">{{ course.year }} курс</div>
+                    <div class="course-students">{{ course.students|length }} студентов</div>
+                </a>
+            {% endfor %}
+        </div>
+
+        <footer>
+            <p>© 2026 Хогвартс. Все права защищены.</p>
+            <p class="magic-text">VK.COM/MAGICHOGWARTS_SCHOOL</p>
+        </footer>
+    </div>
+</body>
+</html>
