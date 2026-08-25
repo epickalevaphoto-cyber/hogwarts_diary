@@ -4,17 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Аттестат - {{ student.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: #1a0f0a;
+            color: #f5e6c8;
+            min-height: 100vh;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .no-print { text-align: center; margin: 20px 0; }
+        .btn {
+            display: inline-block;
+            padding: 10px 30px;
+            background: #c9a84c;
+            color: #1a0f0a;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        .btn:hover { background: #dbb95c; }
+        .print-btn {
+            display: inline-block;
+            padding: 10px 30px;
+            background: #4a6a8a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .print-btn:hover { background: #5a7a9a; }
+        
         .certificate {
-            max-width: 800px;
-            margin: 0 auto;
             padding: 40px;
             background: linear-gradient(135deg, #2a1a0a 0%, #3d2817 50%, #2a1a0a 100%);
             border: 10px solid #c9a84c;
             border-radius: 20px;
             color: #f5e6c8;
-            font-family: 'Georgia', serif;
             box-shadow: 0 20px 60px rgba(0,0,0,0.8);
             position: relative;
         }
@@ -69,9 +97,11 @@
             border-collapse: collapse;
             margin: 20px 0;
         }
+        .grades-table tr {
+            border-bottom: 1px solid rgba(201,168,76,0.2);
+        }
         .grades-table td {
             padding: 10px 15px;
-            border-bottom: 1px solid rgba(201,168,76,0.3);
         }
         .grades-table .subject {
             font-size: 18px;
@@ -87,6 +117,7 @@
         .grade-satisfactory { color: #90ee90; }
         .grade-poor { color: #ffa07a; }
         .grade-fail { color: #ff6b6b; }
+        .grade-not-graded { color: #a08060; }
         .certificate-footer {
             margin-top: 40px;
             padding-top: 20px;
@@ -95,21 +126,14 @@
             justify-content: space-between;
             align-items: center;
         }
-        .signature {
-            text-align: center;
-        }
-        .signature .name {
-            font-size: 18px;
-            color: #c9a84c;
-        }
-        .signature .title {
-            font-size: 14px;
-            color: #a08060;
-        }
+        .signature { text-align: center; }
+        .signature .name { font-size: 18px; color: #c9a84c; }
+        .signature .title { font-size: 14px; color: #a08060; }
         .certificate-date {
             text-align: center;
             color: #a08060;
             font-size: 14px;
+            margin-top: 20px;
         }
         .certificate-magic {
             text-align: center;
@@ -118,48 +142,39 @@
             font-size: 12px;
             letter-spacing: 1px;
         }
-        .btn-back {
+        .faculty-badge {
             display: inline-block;
-            margin: 20px auto;
-            padding: 10px 30px;
-            background: #c9a84c;
-            color: #2a1a0a;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        .btn-back:hover {
-            background: #dbb95c;
-            transform: scale(1.05);
-        }
-        .print-btn {
-            display: inline-block;
-            margin: 10px;
-            padding: 10px 30px;
-            background: #4a6a8a;
+            padding: 4px 15px;
+            border-radius: 15px;
+            font-size: 14px;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
             font-weight: bold;
-            cursor: pointer;
-            border: none;
-        }
-        .print-btn:hover {
-            background: #5a7a9a;
+            margin-top: 10px;
         }
         @media print {
             .no-print { display: none !important; }
-            .certificate { box-shadow: none; border: 2px solid #c9a84c; }
+            .certificate { 
+                box-shadow: none; 
+                border: 2px solid #c9a84c;
+                page-break-inside: avoid;
+            }
             body { background: white; }
+        }
+        @media (max-width: 600px) {
+            .certificate { padding: 20px; }
+            .certificate-header h1 { font-size: 20px; }
+            .student-name-cert { font-size: 24px; }
+            .grades-table td { padding: 8px 10px; font-size: 14px; }
+            .certificate-footer { flex-direction: column; gap: 15px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="no-print" style="text-align: center; margin: 20px 0;">
-            <a href="{{ url_for('course_view', course_id=course.id) }}" class="btn-back">⬅️ Вернуться к журналу</a>
-            <button onclick="window.print()" class="print-btn">🖨️ Распечатать аттестат</button>
+        <div class="no-print">
+            <a href="{{ url_for('course_view', course_id=course.id) }}" class="btn">⬅️ Вернуться к журналу</a>
+            <a href="{{ url_for('certificate', student_id=student.id) }}" class="btn" target="_blank">📥 Скачать PNG</a>
+            <button onclick="window.print()" class="print-btn">🖨️ Распечатать</button>
         </div>
 
         <div class="certificate">
@@ -170,7 +185,15 @@
 
             <div class="certificate-title"># СЕРТИФИКАТ О ЗАВЕРШЕНИИ</div>
 
-            <div class="student-name-cert">{{ student.name }}</div>
+            <div class="student-name-cert">
+                {{ student.name }}
+                {% if student.faculty %}
+                    <br>
+                    <span class="faculty-badge" style="background: {{ student.faculty.color }};">
+                        {{ student.faculty.name }}
+                    </span>
+                {% endif %}
+            </div>
 
             <table class="grades-table">
                 {% for subject in subjects %}
@@ -182,6 +205,7 @@
                             {% elif grades[subject.name] == 'Удовлетворительно' %}grade-satisfactory
                             {% elif grades[subject.name] == 'Слабо' %}grade-poor
                             {% elif grades[subject.name] == 'Провал' %}grade-fail
+                            {% else %}grade-not-graded
                             {% endif %}">
                             {{ grades[subject.name] }}
                         </td>
@@ -192,7 +216,13 @@
             <div class="certificate-footer">
                 <div class="signature">
                     <div class="name">Декан Факультета</div>
-                    <div class="title">Filius Aitwick</div>
+                    <div class="title">
+                        {% if student.faculty %}
+                            {{ student.faculty.dean }}
+                        {% else %}
+                            Filius Aitwick
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="signature">
                     <div class="name">ДИРЕКТОР</div>
